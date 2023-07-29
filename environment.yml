@@ -1,0 +1,16 @@
+name: svision-pro-env
+channels:
+  - anaconda
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python==3.7.9
+  - pytorch==1.10.1
+  - numpy==1.21.6
+  - pip
+  - pip:
+    - pysam
+    - opencv-python
+    - scipy
+    - Pillow
