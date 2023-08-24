@@ -36,6 +36,9 @@ conda env create -f ./environment.yml
 ## Install from source
 conda activate svision-pro-env
 python setup.py install
+
+Note: Please make sure you have installed the same version of dependencies as in ./environment.yml. 
+      We recommand that you create a new conda env and install by the command lines above. 
 ```
 
 ## Usage
@@ -46,22 +49,22 @@ There are four detection mode in SVision-pro:
 
 Command line format for 'germline' mode (N=0):
 ```commandline
-python SVision-pro.py --target_path /path/to/target.bam  --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode germline
+SVision-pro --target_path /path/to/target.bam  --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode germline
 ```
 
 Command line format for 'somatic' mode (N=1):
 ```commandline
-python SVision-pro.py --target_path /path/to/tumor.bam  --base_path /path/to/normal.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode somatic
+SVision-pro --target_path /path/to/tumor.bam  --base_path /path/to/normal.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode somatic
 ```
 
 Command line format for 'denovo' mode (N=2):
 ```commandline
-python SVision-pro.py --target_path /path/to/child.bam  --base_path /path/to/father.bam /path/to/mother.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode denovo
+SVision-pro --target_path /path/to/child.bam  --base_path /path/to/father.bam /path/to/mother.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode denovo
 ```
 
 Command line format for 'genotype' mode (N=N):
 ```commandline
-python SVision-pro.py --target_path /path/to/target.bam  --base_path /path/to/base1.bam /path/to/base2.bam /path/to/base3.bam... --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode genotype --region chr1:1000-2000
+SVision-pro --target_path /path/to/target.bam  --base_path /path/to/base1.bam /path/to/base2.bam /path/to/base3.bam... --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode genotype --region chr1:1000-2000
 ```
 
 Other optional parameters:

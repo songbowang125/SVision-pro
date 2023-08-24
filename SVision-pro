@@ -251,9 +251,9 @@ if __name__ == '__main__':
             logging.error("[Collecting Error] {} {}. {}".format(options.sample_name, res[0][0], res[0][1]))
             errored_intervals.append(res[0][0])
 
-    if len(errored_intervals) > 0:
-        logging.error("[Collecting Failed] {}. Plesse check the error messages above".format(options.sample_name,))
-        exit(-1)
+    #if len(errored_intervals) > 0:
+    #    logging.error("[Collecting Failed] {}. Plesse check the error messages above".format(options.sample_name,))
+    #    exit(-1)
 
     # # STEP: do genotyping
     logging.info("****************** Step2 lite-Unet predicting **************************")
