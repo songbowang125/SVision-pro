@@ -118,7 +118,6 @@ def check_arguments(options):
     else:
         options.min_diff_freq = 0.3
 
-
     options.dist_diff_length = 1000
     options.dist_merge_continuous = 1000
 
@@ -214,8 +213,13 @@ if __name__ == '__main__':
         else:
             import pysam
             ref_file = pysam.FastaFile(options.genome_path)
+            bam_file = pysam.AlignmentFile(options.target_path)
 
+            bam_file_reference = bam_file.references
             for chrom in ref_file.references:
+                if chrom not in bam_file_reference:
+                    continue
+
                 chrom_length = ref_file.get_reference_length(chrom)
 
                 chrom_length_dict[chrom] = chrom_length
@@ -224,6 +228,9 @@ if __name__ == '__main__':
 
                 for interval_index in range(interval_num):
                     chrom_intervals.append([chrom, interval_index * options.interval_size, (interval_index + 1) * options.interval_size])
+
+            ref_file.close()
+            bam_file.close()
 
         options.accessible_chroms = list(chrom_length_dict.keys())
 

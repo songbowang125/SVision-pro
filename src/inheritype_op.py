@@ -473,7 +473,7 @@ def inheritype_variants_in_interval(interval_chrom, interval_start, interval_end
             var_read_start_index = int(left_extension_length / color_plot_resize_ratio)
 
             for simple_var_index in range(len(simple_var_list)):
-                simple_var_split = simple_var_list[simple_var_index].split("_")
+                simple_var_split = simple_var_list[simple_var_index].split("++")
 
                 simple_var_type = simple_var_split[0]
                 simple_var_hybrid_length = int(simple_var_split[1])
@@ -617,7 +617,7 @@ def inheritype_variants_in_interval(interval_chrom, interval_start, interval_end
                 pseudo_base_vaf = []
 
             for simple_var_index in range(len(simple_var_list)):
-                simple_var_split = simple_var_list[simple_var_index].split("_")
+                simple_var_split = simple_var_list[simple_var_index].split("++")
 
                 simple_var_type = simple_var_split[0]
                 simple_var_hybrid_length = int(simple_var_split[1])

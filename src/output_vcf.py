@@ -301,9 +301,9 @@ def output_origin_record_to_vcf(partition, output_vcf, options):
     bkp_str = []
     for simple_var in partition.target_variant:
         if simple_var.type in ["dDUP", "tDUP", "itDUP", "idDUP"]:
-            bkp_str.append("{}_{}_{}_{}_{}_{}".format(simple_var.type, simple_var.hybrid_length, simple_var.dup_source_chrom, simple_var.dup_source_start, simple_var.dup_source_end, simple_var.ref_start))
+            bkp_str.append("{}++{}++{}++{}++{}++{}".format(simple_var.type, simple_var.hybrid_length, simple_var.dup_source_chrom, simple_var.dup_source_start, simple_var.dup_source_end, simple_var.ref_start))
         else:
-            bkp_str.append("{}_{}_{}_{}_{}_{}".format(simple_var.type, simple_var.hybrid_length, simple_var.ref_chrom, simple_var.ref_start, simple_var.ref_end, simple_var.ref_start))
+            bkp_str.append("{}++{}++{}++{}++{}++{}".format(simple_var.type, simple_var.hybrid_length, simple_var.ref_chrom, simple_var.ref_start, simple_var.ref_end, simple_var.ref_start))
 
     bkp_str = ",".join(bkp_str)
 
