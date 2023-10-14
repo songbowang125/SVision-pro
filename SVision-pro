@@ -171,6 +171,7 @@ if __name__ == '__main__':
     logging.info("Command: {}".format(" ".join(sys.argv)))
 
     logging.info("****************** Step1 collecting and plotting **********************")
+    collect_start_time = datetime.datetime.now()
 
     # # STEP: collect accessible chroms
     chrom_length_dict = {}
@@ -258,12 +259,18 @@ if __name__ == '__main__':
             logging.error("[Collecting Error] {} {}. {}".format(options.sample_name, res[0][0], res[0][1]))
             errored_intervals.append(res[0][0])
 
+    collect_end_time = datetime.datetime.now()
+    collect_cost_time = (collect_end_time - collect_start_time).seconds
+
+    logging.info("Collecting Time Cost {}s".format(collect_cost_time))
+
     #if len(errored_intervals) > 0:
     #    logging.error("[Collecting Failed] {}. Plesse check the error messages above".format(options.sample_name,))
     #    exit(-1)
 
     # # STEP: do genotyping
     logging.info("****************** Step2 lite-Unet predicting **************************")
+    predict_start_time = datetime.datetime.now()
 
     if options.device == "cpu":
         # process_pool = multiprocessing.Pool(max(1, int(options.process_num / options.unet_cpu_num)))
@@ -289,6 +296,11 @@ if __name__ == '__main__':
             if len(res[0]) != 0:
                 logging.error("[Inherityping Error] {} {}. {}".format(options.sample_name, res[0][0], res[0][1]))
 
+    predict_end_time = datetime.datetime.now()
+    predict_cost_time = (predict_end_time - predict_start_time).seconds
+
+    logging.info("Predicting Time Cost {}s".format(predict_cost_time))
+
     # # STEP: merge split vcfs to final vcf file
     logging.info("****************** Step3 Outputting to VCF ****************************")
 
@@ -302,4 +314,4 @@ if __name__ == '__main__':
     end_time = datetime.datetime.now()
 
     logging.info("****************** Step4 Finish ***********************************")
-    logging.info("SVision-pro v{} successfully finished, costing {}s".format(__version__, (end_time - start_time).total_seconds()))
+    logging.info("SVision-pro v{} successfully finished. Time Cost {}s".format(__version__, (end_time - start_time).total_seconds()))
