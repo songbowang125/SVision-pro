@@ -380,8 +380,12 @@ def perform_coarse_partition_iter(hyper_cigars, options):
     for cur_cigar in hyper_cigars:
 
         # # leave uncovered cigar alone for later process
-        if cur_cigar.uncovered_flag is True:
+        if not options.rescue_large and cur_cigar.uncovered_flag is True:
             uncovered_hyper_cigars.append(cur_cigar)
+
+        elif options.rescue_large and cur_cigar.uncovered_flag is True and len(cur_cigar.supp_reads) < 3:
+            uncovered_hyper_cigars.append(cur_cigar)
+
         elif cur_cigar.shorter_flag is True:
             shorter_hyper_cigars.append(cur_cigar)
         else:

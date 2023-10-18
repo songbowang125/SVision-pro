@@ -45,6 +45,7 @@ def parse_arguments(arguments=sys.argv[1:]):
     optional_params.add_argument('--force_cluster', action="store_true", default=False, help='Force cluster uncovered events')
     optional_params.add_argument('--skip_coverage_filter', action="store_true", default=False, help='SKip filtering reads by max read coverage threshold')
     optional_params.add_argument('--skip_mismatch_filter', action="store_true", default=False, help='SKip filtering reads by mismatch ratio')
+    optional_params.add_argument('--rescue_large', action="store_true", default=False, help='Report large SV/CSVs that are not fully covered by reads')
 
     it_params = parser.add_argument_group("Lite-Unet parameters")
     it_params.add_argument('--img_size', dest="img_size", choices=[256, 512, 1024], default=256, type=int, help='Image size for generating plots')
