@@ -500,7 +500,7 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
 
         # # STEP: for near hyper cigar Is and Ds, we merge them as one
         # if len(hyper_cigars_single_read) != 0 and not options.preset == "asm":
-        if len(hyper_cigars_single_read) != 0 and options.detect_mode not in ["somatic"]:
+        if len(hyper_cigars_single_read) != 0 and not options.skip_nearby:
             merge_continuous_Is_and_ds(hyper_cigars_single_read, options.dist_merge_continuous)
 
         # # STEP: add cur read's non match cigars to all reads
