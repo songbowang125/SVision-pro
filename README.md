@@ -49,21 +49,32 @@ There are four detection mode in SVision-pro:
 
 Command line format for 'germline' mode (N=0):
 ```commandline
+## run SVision-pro
 SVision-pro --target_path /path/to/target.bam  --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode germline
 ```
 
 Command line format for 'somatic' mode (N=1):
 ```commandline
+## run SVision-pro
 SVision-pro --target_path /path/to/tumor.bam  --base_path /path/to/normal.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode somatic
+
+## extract somatic calls
+python extract_op.py --input_vcf /path/to/svision_pro.vcf --extract somatic
 ```
+
 
 Command line format for 'denovo' mode (N=2):
 ```commandline
+## run SVision-pro
 SVision-pro --target_path /path/to/child.bam  --base_path /path/to/father.bam /path/to/mother.bam --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode denovo
+
+## extract denovo calls
+python extract_op.py --input_vcf /path/to/svision_pro.vcf --extract denovo
 ```
 
 Command line format for 'genotype' mode (N=N):
 ```commandline
+## run SVision-pro
 SVision-pro --target_path /path/to/target.bam  --base_path /path/to/base1.bam /path/to/base2.bam /path/to/base3.bam... --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode genotype --region chr1:1000-2000
 ```
 
