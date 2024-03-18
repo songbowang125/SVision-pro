@@ -78,11 +78,16 @@ Command line format for 'genotype' mode (N=N):
 SVision-pro --target_path /path/to/target.bam  --base_path /path/to/base1.bam /path/to/base2.bam /path/to/base3.bam... --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode genotype --region chr1:1000-2000
 ```
 
+Other recommended parameters:
+
+```commandline
+## We have provided access BED files for human genomes (src/pre_process), which exclude centromere and heterochromatin regions.
+--access_path   Absolute path to access BED file that contains accessable regions of the reference genome
+```
 Other optional parameters:
 ```commandline
 Input parameters:
 --process_num   Thread numbers
---access_path   Absolute path to access BED file that contains accessable regions of the reference genome
 --preset        Sequence type, including hifi, error-prone and asm (for assembly-based calling)
 
 Filter paramters:

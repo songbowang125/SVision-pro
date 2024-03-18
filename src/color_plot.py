@@ -147,6 +147,8 @@ def get_drawable_op_color(op, channel):
     generate drawable op color with different channels
     """
 
+    op = op.upper()
+
     op_color = OP_COLOR_DICT[op].copy()
 
     if channel == "inv_channel":

@@ -454,9 +454,9 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
         # # unmapped or secondary or low mapping quality, then pass this align
         if align.is_unmapped:
             continue
-        if align.is_secondary:
+        if mode == "target" and align.is_secondary:
             continue
-        if align.mapq < options.min_mapq:
+        if mode == "target" and align.mapq < options.min_mapq:
             continue
 
         # # align to a ref that not in genome reference
@@ -629,8 +629,12 @@ def collect_from_intra_align(align, mode, options):
                 cigar_ref_start = ref_pointer + align_ref_start - 1
                 cigar_ref_end = ref_pointer + align_ref_start - 1
                 detail_cigar = DetailCigar("UnmappedI", op_len, cigar_ref_chrom, cigar_ref_start, cigar_ref_end, "+")
-                detail_cigar.set_shorter_flag(True)
-                candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname], shorter_flag=True))
+
+                if mode == "target":
+                    detail_cigar.set_shorter_flag(True)
+                    candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname], shorter_flag=True))
+                else:
+                    candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname]))
 
             # # save to list
             read_pointer += op_len
@@ -654,10 +658,14 @@ def collect_from_intra_align(align, mode, options):
             # elif op_len >= options.min_sv_size - 10 and "N" not in ref_bases:
                 cigar_ref_chrom = align_ref_chrom
                 cigar_ref_start = ref_pointer + align_ref_start - 1
-                cigar_ref_end = ref_pointer + align_ref_start - 1
+                cigar_ref_end = ref_pointer + align_ref_start + op_len - 1
                 detail_cigar = DetailCigar(op, op_len, cigar_ref_chrom, cigar_ref_start, cigar_ref_end, "+")
-                detail_cigar.set_shorter_flag(True)
-                candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname], shorter_flag=True))
+
+                if mode == "target":
+                    detail_cigar.set_shorter_flag(True)
+                    candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname], shorter_flag=True))
+                else:
+                    candidate_hyper_cigars.append(HyperCigar([detail_cigar], [align_qname]))
 
             ref_pointer += op_len
 

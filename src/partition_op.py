@@ -529,7 +529,7 @@ def generate_partitions_in_interval(target_hyper_cigars, ref_file, interval_chro
                 if "N" not in partition.included_hyper_cigars[0].alt_bases and "N" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
                     filtered_partitions.append(partition)
 
-            if mode == "base" and options.min_sv_size <= partition.hybrid_length <= options.max_sv_size and 1 <= len(partition.supp_reads):
+            if mode == "base" and options.min_sv_size - 20 <= partition.hybrid_length <= options.max_sv_size and 1 <= len(partition.supp_reads):
                 partition.update_alt_bases(ref_file)
                 if "N" not in partition.included_hyper_cigars[0].alt_bases and "N" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
                     filtered_partitions.append(partition)

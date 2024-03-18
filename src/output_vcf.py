@@ -87,6 +87,8 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
                     else:
                         csv_cnt += 1
 
+                    record_split[7] = record_split[7].replace("++", "_")
+
                     fout.write("\t".join(record_split))
 
     end_time = datetime.datetime.now()
