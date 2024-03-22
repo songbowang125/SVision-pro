@@ -1,15 +1,13 @@
 ## SVision-pro
-SVision-pro detects de novo/somatic structural variants (SV), including simple SV (SSV) and complex SV (CSV). 
+SVision-pro detects germline, de novo and somatic structural variants (SV), including simple SV (SSV) and complex SV (CSV). 
 SVision-pro implements genome-to-genome representation and comparative SV detection, genotyping and differentiating using a neural network based image instance segmentation framework. 
-
-<div align=left><img width=80% height=80% src="https://github.com/songbowang125/SVision-pro/blob/main/src/pre_process/workflow.png"/></div> 
-
-## Capabilities
-SVision-pro is a universal approach for germline, de novo, somatic SV/CSV detection. SVision-pro also supports to find sample-specific SV/CSVs among multiple samples. 
 
 SVision-pro comprises two modules: a genome-to-genome representation module encoding genomic features from two samples to an image, from which a neural-network recognition module comparatively recognizes SVs as well as their inter-genome differences. In particular, SVision-pro formulates SV detection, genotyping and differentiating as a neural-network-based image instance segmentation task, facilitating the discovery of both de novo and somatic SV and CSV.
 
+<div align=left><img width=80% height=80% src="https://github.com/songbowang125/SVision-pro/blob/main/src/pre_process/workflow.png"/></div> 
 
+## Citation
+Please cite our paper ["Songbo Wang et al. De novo and somatic structural variant discovery with SVision-pro. Nature Biotechnology (2024)"](https://www.nature.com/articles/s41587-024-02190-7)
 ## License
 
 SVision-pro is free for non-commercial use by academic, government, and non-profit/not-for-profit institutions. A commercial version of the software is available and licensed through Xi’an Jiaotong University.
