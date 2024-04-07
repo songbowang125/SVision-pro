@@ -75,8 +75,21 @@ Command line format for 'genotype' mode (N=N):
 ## run SVision-pro
 SVision-pro --target_path /path/to/target.bam  --base_path /path/to/base1.bam /path/to/base2.bam /path/to/base3.bam... --genome_path /path/to/reference.fasta --model_path /path/to/model.pth --out_path /path/to/output/ --sample_name sample1 --detect_mode genotype --region chr1:1000-2000
 ```
+Model (or image size) parameter:
+```commandline
+## For now, SVision-pro provides three different LiteUnet models (256/512/1024, in src/pre_process/model_liteunet_xxx_8_16_32_32_32.pth).
+The three models correspond to three differenct image size settings (256, 512 and 1024), which determine the minimum detectable SV frequencies (0.04, 0.02 and 0.01). The description about this setting could be found in the Method section of our paper. 
+   
+In common, image size 256 (default) is capable for most conditions. 
+So, you can directly use the 256 model (src/pre_process/model_liteunet_256_8_16_32_32_32.pth). 
 
-Other recommended parameters:
+While if you use other models/image sizes, please use this two parameters simultaneously:
+SVision-pro ... ... --img_size 512 --model_path model_liteunet_512_8_16_32_32_32.pth, or
+SVision-pro ... ... --img_size 1024 --model_path model_liteunet_1024_8_16_32_32_32.pth
+```
+
+
+Recommended parameters:
 
 ```commandline
 ## We have provided access BED files for human genomes (src/pre_process), which exclude centromere and heterochromatin regions.
