@@ -175,9 +175,10 @@ def cigar_to_list(cigar, rm_clip=True):
             ops = ops[1:]
             lengths = lengths[1:]
 
-        if ops[-1] == "S" or ops[-1] == "H":
-            ops = ops[: -1]
-            lengths = lengths[: -1]
+        if len(ops) > 1:    # # fix on v1.9 for VACmap aligner, there are aligns with CIGAR like '13520S' and there will be no index -1
+            if ops[-1] == "S" or ops[-1] == "H":
+                ops = ops[: -1]
+                lengths = lengths[: -1]
 
     return ops, lengths
 
@@ -788,6 +789,9 @@ def collect_from_inter_align(primary, mode, options):
             for non_match_align in included_non_match_aligns:
                 align_cigar_op, align_cigar_op_len = cigar_to_list(non_match_align.cigar)
 
+                if len(align_cigar_op) == 0:     # # fix on v1.9 for empty align_cigar_op
+                    continue
+
                 if options.skip_flanking_indels and align_cigar_op_len[0] < options.min_sv_size:
                     continue
 
@@ -838,6 +842,10 @@ def collect_from_inter_align(primary, mode, options):
     for i in range(len(read_aligns)):
         tmp_align = read_aligns[i]
         tmp_align_cigar_op, tmp_align_cigar_op_len = cigar_to_list(tmp_align.cigar)
+
+        if len(tmp_align_cigar_op) == 0:    # # fix on v1.9 for empty align_cigar_op
+            continue
+
         if tmp_align_cigar_op[0] != "I":
             break
         else:
@@ -858,6 +866,9 @@ def collect_from_inter_align(primary, mode, options):
     for i in range(len(read_aligns) - 1, -1, -1):
         tmp_align = read_aligns[i]
         tmp_align_cigar_op, tmp_align_cigar_op_len = cigar_to_list(tmp_align.cigar)
+
+        if len(tmp_align_cigar_op) == 0:    # # fix on v1.9 for empty align_cigar_op
+            continue
 
         if tmp_align_cigar_op[0] != "I":
             break
