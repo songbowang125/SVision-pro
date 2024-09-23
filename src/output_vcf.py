@@ -150,6 +150,9 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
             merged_bnd_records = re_merge_bnds(raw_bnds_records, options)
 
             for record in merged_bnd_records:
+                record.info.pop("SVLEN")
+                record.info.pop("BKPS")
+
                 fout.write(str(record))
 
     end_time = datetime.datetime.now()
