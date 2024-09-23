@@ -143,13 +143,17 @@ def collect_and_detect_in_interval(interval_chrom, interval_start, interval_end,
 
                 if (partition.ref_end_with_secondary - partition.ref_start_with_secondary) < options.max_sv_size:
                     # # STEP: generate base and target cigar maps
-                    generate_cigar_map_for_partition(partition, options)
+                    # # for bnd
+                    if not options.skip_bnd and partition.included_hyper_cigars[0].op == "B":
+                        pass
+                    else:
+                        generate_cigar_map_for_partition(partition, options)
 
-                    # # STEP: generate color plots and write img name to file
-                    color_plot_names = generate_color_plot_for_partition(partition, interval_img_path, options)
-                    partition.set_color_plot_name(color_plot_names)
-                    for plot_name in color_plot_names:
-                        interval_list_out.write("{}\n".format(plot_name))
+                        # # STEP: generate color plots and write img name to file
+                        color_plot_names = generate_color_plot_for_partition(partition, interval_img_path, options)
+                        partition.set_color_plot_name(color_plot_names)
+                        for plot_name in color_plot_names:
+                            interval_list_out.write("{}\n".format(plot_name))
 
             # # STEP: output to vcf
             output_origin_record_to_vcf(partition, interval_vcf_out, options)

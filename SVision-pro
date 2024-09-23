@@ -46,6 +46,7 @@ def parse_arguments(arguments=sys.argv[1:]):
     optional_params.add_argument('--skip_coverage_filter', action="store_true", default=False, help='SKip filtering reads by max read coverage threshold')
     optional_params.add_argument('--skip_mismatch_filter', action="store_true", default=False, help='SKip filtering reads by mismatch ratio')
     optional_params.add_argument('--skip_nearby', action="store_true", default=False, help='SKip merging nearby Is and Ds')
+    optional_params.add_argument('--skip_bnd', action="store_true", default=False, help='SKip calling BNDs')
     optional_params.add_argument('--rescue_large', action="store_true", default=False, help='Report large SV/CSVs that are not fully covered by reads')
 
     it_params = parser.add_argument_group("Lite-Unet parameters")
@@ -123,7 +124,7 @@ def check_arguments(options):
     options.dist_diff_length = 1000
     options.dist_merge_continuous = 1000
 
-    options.skip_bnd = True
+    options.skip_bnd = options.skip_bnd
     options.skip_flanking_indels = True
 
     if options.skip_mismatch_filter:
@@ -285,6 +286,7 @@ if __name__ == '__main__':
     process_pool_res = []
 
     for interval_chrom, interval_start, interval_end in chrom_intervals:
+        # inheritype_variants_in_interval(interval_chrom, interval_start, interval_end, options)
         process_pool_res.append(process_pool.apply_async(inheritype_variants_in_interval, (interval_chrom, interval_start, interval_end, options)))
 
     process_pool.close()

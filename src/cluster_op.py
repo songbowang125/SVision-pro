@@ -36,7 +36,9 @@ def iterative_cluster(partition, hyper_cigar, options, ignore_op=False, ignore_l
         size_sim = partition.hybrid_length / hyper_cigar.hybrid_length
 
     # # STEP: cluster single bkp events (such as B)
-    if hyper_cigar.op == "B":
+    if not options.skip_bnd and hyper_cigar.op == "B":
+        if partition.included_hyper_cigars[0].op != "B":
+            return False, -1
         if hyper_cigar.detail_cigars[0].bnd_ref_start - partition.included_hyper_cigars[0].detail_cigars[0].bnd_ref_start <= options.dist_diff_length and hyper_cigar.detail_cigars[0].bnd_ref_chrom == partition.included_hyper_cigars[0].detail_cigars[0].bnd_ref_chrom:
             return True, 1
     # # STEP: cluster multi bkps events

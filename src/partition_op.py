@@ -308,7 +308,8 @@ class Partition:
         return False
 
     def to_string(self):
-        return "{}\t{}\t{}\t{}\t{}\t{}".format(self.ref_chrom, self.ref_start, self.ref_end, len(self.included_hyper_cigars), [cigar.to_string() for cigar in self.included_hyper_cigars], self.cigar_map_freq)
+        # return "{}\t{}\t{}\t{}\t{}\t{}".format(self.ref_chrom, self.ref_start, self.ref_end, len(self.included_hyper_cigars), [cigar.to_string() for cigar in self.included_hyper_cigars], self.cigar_map_freq)
+        return "{}\t{}\t{}\t{}\t{}".format(self.ref_chrom, self.ref_start, self.ref_end, len(self.included_hyper_cigars), [cigar.to_string() for cigar in self.included_hyper_cigars])
 
 
 def perform_best_partition_cluster(fine_partitions, method="hierarchical"):
@@ -504,6 +505,8 @@ def generate_partitions_in_interval(target_hyper_cigars, ref_file, interval_chro
 
     fine_partitions = perform_fine_partition_iter(coarse_partitions, options)
 
+    # for partition in fine_partitions:
+    #     print(partition.to_string())
     # best_partitions = perform_best_partition_cluster(fine_partitions)
 
     # # STEP: filter    
@@ -608,7 +611,7 @@ def mark_poly_partitions(partition_list, interval_chrom, interval_start, interva
             continue
 
         if partition_list[partition_index].included_hyper_op == "B":
-            partition_list[partition_index].set_filter_marker("POLY")
+            partition_list[partition_index].set_filter_marker("PASS")
         else:
             belonged_bin_index = int((partition_list[partition_index].ref_start - interval_start) / bin_size)
 

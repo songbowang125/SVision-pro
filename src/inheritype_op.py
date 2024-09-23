@@ -13,7 +13,7 @@ import logging
 import sys, traceback
 import datetime
 import numpy as np
-
+from src.output_vcf import output_vcf_header_final
 
 class PIX_CLASS:
     def __init__(self, class_type, pix_start, pix_end):
@@ -423,6 +423,7 @@ def inheritype_variants_in_interval(interval_chrom, interval_start, interval_end
     interval_out_vaf = os.path.join(interval_out_path, "vcf.txt")
     interval_it_out_vaf = open(os.path.join(interval_out_path, "vcf.it.txt"), "w")
 
+    output_vcf_header_final(options.genome_path, options.target_path, options.base_path, interval_it_out_vaf)
 
     try:
         if not options.skip_inheritype:

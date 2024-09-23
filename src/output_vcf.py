@@ -50,6 +50,54 @@ def classify_vaf_to_genotype(vaf):
     else:
         return '0/0'
 
+def re_merge_bnds(raw_bnd_records, options):
+    """
+    due the primary and supplementary, the bnd start could be either in the first chrom or the second chrom.
+    In that case, we need merge the two condition together
+    """
+
+    def parse_bnd_record(bnd_record, reverse_two_bkp=False):
+
+        reverse_orient = {"+": "-", "-": "+"}
+
+        first_chrom, first_pos, first_orient = bnd_record.contig, bnd_record.start + 1, "+"
+        second_info = list(bnd_record.alts)[0]
+
+        if "]" in second_info:
+            second_orient = "-"
+        else:
+            second_orient = "+"
+
+        second_info = second_info.replace("[N", "").replace("]N", "").replace("]", "").replace("[", "").split(":")
+        second_chrom, second_pos = second_info[0], int(second_info[1])
+
+        if reverse_two_bkp:
+            return second_chrom, second_pos, reverse_orient[second_orient], first_chrom, first_pos, reverse_orient[first_orient]
+        else:
+            return first_chrom, first_pos, first_orient, second_chrom, second_pos, second_orient
+
+    # # traverse each
+    merged_bnd_records = []
+
+    for base_record in raw_bnd_records:
+
+        merge_flag = False
+        for target_record in merged_bnd_records:
+
+            base_first_chrom, base_first_pos, base_first_orient, base_second_chrom, base_second_pos, base_second_orient = parse_bnd_record(base_record)
+
+            target_first_chrom, target_first_pos, target_first_orient, target_second_chrom, target_second_pos, target_second_orient = parse_bnd_record(target_record, reverse_two_bkp=True)
+
+            if base_first_chrom == target_first_chrom and base_second_chrom == target_second_chrom and base_first_orient == target_first_orient and base_second_orient == target_second_orient and abs(base_first_pos - target_first_pos) < options.dist_diff_length and abs(base_second_pos - target_second_pos) < options.dist_diff_length:
+                merge_flag = True
+                break
+
+        if not merge_flag:
+            merged_bnd_records.append(base_record)
+
+    return merged_bnd_records
+
+
 
 def output_vcf_final(output_vcf_path, intervals_list, options):
     """
@@ -66,6 +114,8 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
 
         output_vcf_header_final(options.genome_path, options.target_path, options.base_path, fout)
 
+        raw_bnds_records = []
+
         for interval_chrom, interval_start, interval_end in intervals_list:
             interval_info = "{}_{}_{}".format(interval_chrom, interval_start, interval_end)
 
@@ -74,9 +124,14 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
             if not os.path.exists(interval_it_vcf):
                 continue
 
-            with open(interval_it_vcf) as interval_records:
+            with pysam.VariantFile(interval_it_vcf) as interval_records:
                 for record in interval_records:
-                    record_split = record.split("\t")
+
+                    if not options.skip_bnd and record.info["SVTYPE"] == "BND":
+                        raw_bnds_records.append(record)
+                        continue
+
+                    record_split = str(record).split("\t")
 
                     # # update the id
                     record_split[2] = str(output_cnt)
@@ -90,6 +145,12 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
                     record_split[7] = record_split[7].replace("++", "_")
 
                     fout.write("\t".join(record_split))
+
+        if not options.skip_bnd:
+            merged_bnd_records = re_merge_bnds(raw_bnds_records, options)
+
+            for record in merged_bnd_records:
+                fout.write(str(record))
 
     end_time = datetime.datetime.now()
     logging.info("Outputting {} to {}. Time cost: {}s".format(options.sample_name, output_vcf_path, (end_time - start_time).seconds))
@@ -280,18 +341,6 @@ def output_origin_record_to_vcf(partition, output_vcf, options):
         base_pseudo_dv_list = []
         base_pseudo_dr_list = []
 
-    # if pseudo_sv_type == "BND":
-    #     simple_var = partition.target_variant[0]
-    #
-    #     if simple_var.bnd_source_strand == "+":
-    #         bnd_str = "[{}:{}[N".format(simple_var.bnd_source_chrom, simple_var.bnd_source_start)
-    #     else:
-    #         bnd_str = "]{}:{}]N".format(simple_var.bnd_source_chrom, simple_var.bnd_source_start)
-    #
-    #     if not options.skip_bnd:
-    #         print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={}\tGT\t{}".format(partition.ref_chrom, partition.ref_start, 0, "N", bnd_str, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), ".", supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, partition.color_plot_name, partition.color_plot_resize_ratio, pseudo_gt), file=output_vcf)
-    #
-    # else:
     if "+" in pseudo_sv_type:
         is_csv = "CSV"
     elif pseudo_sv_type in ["itDUP", "idDUP"]:
@@ -309,11 +358,25 @@ def output_origin_record_to_vcf(partition, output_vcf, options):
 
     bkp_str = ",".join(bkp_str)
 
-    # # STEP: output to file
-    if len(options.base_path) != 0:
-        print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={};BASE={}\tGT:DR:DV\t{}:{}:{}\t{}".format(partition.ref_chrom, partition.ref_start, 0, "N", is_csv, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, ",".join(partition.color_plot_name), partition.color_plot_resize_ratio, ",".join(base_pseudo_vaf_list), pseudo_gt, pseudo_dr, pseudo_dv, "\t".join(["{}:{}:{}".format(base_pseudo_gt_list[i], base_pseudo_dr_list[i], base_pseudo_dv_list[i]) for i in range(len(base_pseudo_gt_list))])), file=output_vcf)
+    if not options.skip_bnd and pseudo_sv_type == "BND":
+        simple_var = partition.target_variant[0]
+
+        if simple_var.bnd_source_strand == "+":
+            bnd_str = "[{}:{}[N".format(simple_var.bnd_source_chrom, simple_var.bnd_source_start)
+        else:
+            bnd_str = "]{}:{}]N".format(simple_var.bnd_source_chrom, simple_var.bnd_source_start)
+
+        if len(options.base_path) != 0:
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={};BASE={}\tGT:DR:DV\t{}:{}:{}\t{}".format(partition.ref_chrom, partition.ref_start, 0, "N", bnd_str, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, partition.color_plot_name, partition.color_plot_resize_ratio, ",".join(base_pseudo_vaf_list), pseudo_gt, pseudo_dr, pseudo_dv, "\t".join(["{}:{}:{}".format(base_pseudo_gt_list[i], base_pseudo_dr_list[i], base_pseudo_dv_list[i]) for i in range(len(base_pseudo_gt_list))])), file=output_vcf)
+        else:
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={}\tGT:DR:DV\t{}:{}:{}".format(partition.ref_chrom, partition.ref_start, 0, "N", bnd_str, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, partition.color_plot_name, partition.color_plot_resize_ratio, pseudo_gt, pseudo_dr, pseudo_dv), file=output_vcf)
+
     else:
-        print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={}\tGT:DR:DV\t{}:{}:{}".format(partition.ref_chrom, partition.ref_start, 0, "N", is_csv, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, ",".join(partition.color_plot_name), partition.color_plot_resize_ratio, pseudo_gt, pseudo_dr, pseudo_dv), file=output_vcf)
+        # # STEP: output to file
+        if len(options.base_path) != 0:
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={};BASE={}\tGT:DR:DV\t{}:{}:{}\t{}".format(partition.ref_chrom, partition.ref_start, 0, "N", is_csv, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, ",".join(partition.color_plot_name), partition.color_plot_resize_ratio, ",".join(base_pseudo_vaf_list), pseudo_gt, pseudo_dr, pseudo_dv, "\t".join(["{}:{}:{}".format(base_pseudo_gt_list[i], base_pseudo_dr_list[i], base_pseudo_dv_list[i]) for i in range(len(base_pseudo_gt_list))])), file=output_vcf)
+        else:
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={};LEFT={};LEFTLEN={};IMG={};RESIZE={}\tGT:DR:DV\t{}:{}:{}".format(partition.ref_chrom, partition.ref_start, 0, "N", is_csv, "NA", partition.filter_marker, partition.ref_end, partition.hybrid_length, pseudo_sv_type, supp_reads_num, partition.included_hyper_cigars[0].calculate_pseudo_vaf(), bkp_str, supp_reads_str, partition.left_extension_start, partition.ref_start - partition.left_extension_start, ",".join(partition.color_plot_name), partition.color_plot_resize_ratio, pseudo_gt, pseudo_dr, pseudo_dv), file=output_vcf)
 
 
 def output_vcf_header_in_interval(ref_path, target_path, base_path, output_vcf):

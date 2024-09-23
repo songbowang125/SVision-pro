@@ -185,32 +185,34 @@ def collect_and_boost_supp_aligns(primary, mode, options):
 
     # # FIX, =====================================================================================
     # # when the pm align located at the right most or left most index, and the other aligns are all from other chroms
-    if pm_align_index == len(read_aligns) - 1 and sa_align_num_same_pm_chrom == 0:
-        for align in read_aligns[0: pm_align_index]:
-            align_cigar_op, align_cigar_op_len = cigar_to_list(align.cigar)
-            align_cigar_op[0] = "I"
-            align.cigar = "{}{}".format(align_cigar_op_len[0], align_cigar_op[0])
-            # # update secondary mapping
-            align.set_secondary_mapping(align.ref_chrom, align.ref_start, align.ref_end, align.strand)
-            # # update ref info to last align
-            align.ref_chrom = read_aligns[pm_align_index].ref_chrom
-            align.ref_start = read_aligns[pm_align_index].ref_start
-            align.ref_end = read_aligns[pm_align_index].ref_start
-            align.strand = read_aligns[pm_align_index].strand
+    if options.skip_bnd:
+        if pm_align_index == len(read_aligns) - 1 and sa_align_num_same_pm_chrom == 0:
+            for align in read_aligns[0: pm_align_index]:
+                align_cigar_op, align_cigar_op_len = cigar_to_list(align.cigar)
+                align_cigar_op[0] = "I"
+                align.cigar = "{}{}".format(align_cigar_op_len[0], align_cigar_op[0])
+                # # update secondary mapping
+                align.set_secondary_mapping(align.ref_chrom, align.ref_start, align.ref_end, align.strand)
+                # # update ref info to last align
+                align.ref_chrom = read_aligns[pm_align_index].ref_chrom
+                align.ref_start = read_aligns[pm_align_index].ref_start
+                align.ref_end = read_aligns[pm_align_index].ref_start
+                align.strand = read_aligns[pm_align_index].strand
 
-    if pm_align_index == 0 and sa_align_num_same_pm_chrom == 0:
-        for align in read_aligns[1: ]:
-            align_cigar_op, align_cigar_op_len = cigar_to_list(align.cigar)
-            align_cigar_op[0] = "I"
-            align.cigar = "{}{}".format(align_cigar_op_len[0], align_cigar_op[0])
-            # # update secondary mapping
-            align.set_secondary_mapping(align.ref_chrom, align.ref_start, align.ref_end, align.strand)
-            # # update ref info to last align
-            align.ref_chrom = read_aligns[pm_align_index].ref_chrom
-            align.ref_start = read_aligns[pm_align_index].ref_end
-            align.ref_end = read_aligns[pm_align_index].ref_end
-            align.strand = read_aligns[pm_align_index].strand
-    # # END. =====================================================================================
+        if pm_align_index == 0 and sa_align_num_same_pm_chrom == 0:
+
+            for align in read_aligns[1: ]:
+                align_cigar_op, align_cigar_op_len = cigar_to_list(align.cigar)
+                align_cigar_op[0] = "I"
+                align.cigar = "{}{}".format(align_cigar_op_len[0], align_cigar_op[0])
+                # # update secondary mapping
+                align.set_secondary_mapping(align.ref_chrom, align.ref_start, align.ref_end, align.strand)
+                # # update ref info to last align
+                align.ref_chrom = read_aligns[pm_align_index].ref_chrom
+                align.ref_start = read_aligns[pm_align_index].ref_end
+                align.ref_end = read_aligns[pm_align_index].ref_end
+                align.strand = read_aligns[pm_align_index].strand
+        # # END. =====================================================================================
 
     # # STEP: specific primary chrom as the loftmost align's chrom, which was used to generate inserted aligns
     # # this is tricky, since the primary align is longest align to be determined as primary but might be inserted align (such as the insertion of a long TE)
@@ -340,7 +342,6 @@ def get_supplementary_aligns(align, pm_strand, mode, options):
         if align_chrom not in options.accessible_chroms:
             continue
 
-        # print(tag)
         # STEP: remove incomplete info fields
         if len(tag_split) != 6:
             continue

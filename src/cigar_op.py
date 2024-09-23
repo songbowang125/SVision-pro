@@ -446,7 +446,6 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
         coverage_list = []
 
     for align in partial_bam_file:
-        # print(align.qname)
         hyper_cigars_single_read = []
 
         # # no cigar, then pass this align
@@ -749,9 +748,19 @@ def collect_from_inter_align(primary, mode, options):
 
             # # different chrom, then we create a BND cigar
             if cur_align.ref_chrom != next_align.ref_chrom:
+
                 # if cur_align.ref_chrom < next_align.ref_chrom:
-                tmp_detial_cigar = DetailCigar("B", 1, cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
-                tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
+
+                if cur_align.strand == "+":
+                    tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
+                else:
+                    tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_start, cur_align.ref_start, cur_align.strand)
+
+                if next_align.strand == "+":
+                    tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
+                else:
+                    tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_end, next_align.ref_end, next_align.strand)
+
                 # else:
                 #     tmp_detial_cigar = DetailCigar("B", -1, next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
                 #     tmp_detial_cigar.set_bnd_mapping(cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
