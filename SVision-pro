@@ -29,9 +29,9 @@ def parse_arguments(arguments=sys.argv[1:]):
     inout_params.add_argument('--model_path', dest="model_path", type=os.path.abspath, required=True, help='Absolute path to Unet predict model')
     inout_params.add_argument('--genome_path', dest='genome_path', type=os.path.abspath, required=True, help='Absolute path to your reference genome (.fai required in the directory)')
     inout_params.add_argument('--sample_name', dest='sample_name', type=str, required=True, help='Name of the BAM sample name')
+    inout_params.add_argument('--preset', dest='preset', choices=['hifi', 'error-prone', 'asm'], required=True, help='Choose from hifi, error-prone (for ONT and other noisy long reads) and asm')
 
     optional_params = parser.add_argument_group("Optional parameters")
-    optional_params.add_argument('--preset', dest='preset', choices=['hifi', 'error-prone', 'asm'], default='hifi', required=False, help='Choose from hifi, error-prone and asm')
     optional_params.add_argument('--detect_mode', dest='detect_mode', choices=['germline', 'denovo', 'somatic', "genotype"], default='germline', required=False, help='Choose from germline, denovo and somatic')
     optional_params.add_argument('--bkp_mode', dest='bkp_mode', choices=['affected', 'extended'], default='affected', required=False, help='Choose from affected and extended')
     optional_params.add_argument('--process_num', dest="process_num", type=int, default=1, help='Thread numbers (default: %(default)s)')
@@ -44,7 +44,7 @@ def parse_arguments(arguments=sys.argv[1:]):
     optional_params.add_argument("--region", type=str, default=None, help='Specific region (chromosome:start-end) to detect')
     optional_params.add_argument('--force_cluster', action="store_true", default=False, help='Force cluster uncovered events')
     optional_params.add_argument('--skip_coverage_filter', action="store_true", default=False, help='SKip filtering reads by max read coverage threshold')
-    optional_params.add_argument('--skip_mismatch_filter', action="store_true", default=False, help='SKip filtering reads by mismatch ratio')
+    optional_params.add_argument('--enable_mismatch_filter', action="store_true", default=False, help='SKip filtering reads by mismatch ratio')
     optional_params.add_argument('--skip_nearby', action="store_true", default=False, help='SKip merging nearby Is and Ds')
     optional_params.add_argument('--skip_bnd', action="store_true", default=False, help='SKip calling BNDs')
     optional_params.add_argument('--rescue_large', action="store_true", default=False, help='Report large SV/CSVs that are not fully covered by reads')
@@ -90,7 +90,7 @@ def check_arguments(options):
         options.mismatch_ratio = 0.15
         options.size_sim_ratio = 0.7
     else:
-        options.mismatch_filter = True
+        options.mismatch_filter = False
         options.mismatch_ratio = 0.04
         options.size_sim_ratio = 0.8
 
@@ -127,9 +127,8 @@ def check_arguments(options):
     options.skip_bnd = options.skip_bnd
     options.skip_flanking_indels = True
 
-    if options.skip_mismatch_filter:
-        options.mismatch_filter = False
-
+    if options.enable_mismatch_filter:
+        options.mismatch_filter = True
 
 class NoDaemonProcess(multiprocessing.Process):
     # make 'daemon' attribute always return False
