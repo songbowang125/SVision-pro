@@ -63,7 +63,6 @@ def collect_and_detect_in_interval(interval_chrom, interval_start, interval_end,
 
             # # STEP: detect variants
             detect_target_pseudo_variant_for_partition(partition, interval_start, interval_end, target_interval_coverage, options)
-
             if not options.skip_inheritype:
 
                 for base_index in range(len(options.base_path)):
@@ -74,6 +73,7 @@ def collect_and_detect_in_interval(interval_chrom, interval_start, interval_end,
                         base_hyper_cigars, base_interval_coverage = collect_cigars_from_bam(cur_base_path, partition.ref_chrom, partition.left_extension_start, partition.right_extension_end, "base", options)
                     else:
                         base_hyper_cigars, base_interval_coverage = collect_cigars_from_bam(cur_base_path, partition.ref_chrom, partition.ref_start - 1000, partition.ref_end + 1000, "base", options)
+
 
                     # # STEP: generate partition for base hyper cigars
                     base_partitions = generate_partitions_in_interval(base_hyper_cigars, ref_file, partition.ref_chrom, partition.left_extension_start, partition.right_extension_end, "base", options)
@@ -114,8 +114,17 @@ def collect_and_detect_in_interval(interval_chrom, interval_start, interval_end,
                         else:
                             base_range_length = base_hyper_cigar.hybrid_length
 
-                        base_range = range(base_hyper_cigar.ref_start, base_hyper_cigar.ref_start + base_range_length)
-                        pos_similarity = int(100 * (len(target_range.intersection(base_range)) / target_range_length))
+                        if base_hyper_cigar.op == "B" and target_hyper_cigar.op == "B":
+                            base_range_1 = range(base_hyper_cigar.ref_start, base_hyper_cigar.ref_start + base_range_length)
+                            pos_similarity_1 = int(100 * (len(target_range.intersection(base_range_1)) / target_range_length))
+
+                            base_range_2 = range(base_hyper_cigar.bnd_ref_start, base_hyper_cigar.bnd_ref_start + base_range_length)
+                            pos_similarity_2 = int(100 * (len(target_range.intersection(base_range_2)) / target_range_length))
+
+                            pos_similarity = max(pos_similarity_1, pos_similarity_2)
+                        else:
+                            base_range = range(base_hyper_cigar.ref_start, base_hyper_cigar.ref_start + base_range_length)
+                            pos_similarity = int(100 * (len(target_range.intersection(base_range)) / target_range_length))
 
                         if pos_similarity == 0:
                             base_partitions_similarities.append(0)

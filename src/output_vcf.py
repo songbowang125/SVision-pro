@@ -244,7 +244,7 @@ def output_it_record(origin_record, vars_length_list, var_bkp_list, vars_base_gt
     target_dv = origin_gt_info_list[0].split(":")[2]
 
     if base_file_num == 0:
-        print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={}\tGT\t{}".format(origin_record.contig, final_ref_start, 0, "N", origin_record.alts[0], ".", origin_record.filter.keys()[0], final_ref_end, sv_len, origin_record.info["SVTYPE"], origin_record.info["SUPPORT"], pseudo_vaf, ",".join(origin_record.info["BKPS"]), ",".join(origin_record.info["RNAMES"]), target_gt), file=output_vcf)
+        print("{}\t{}\t{}\t{}\t{}\t{}\t{}\tEND={};SVLEN={};SVTYPE={};SUPPORT={};VAF={};BKPS={};RNAMES={}\tGT:DR:DV\t{}:{}:{}".format(origin_record.contig, final_ref_start, 0, "N", origin_record.alts[0], ".", origin_record.filter.keys()[0], final_ref_end, sv_len, origin_record.info["SVTYPE"], origin_record.info["SUPPORT"], pseudo_vaf, ",".join(origin_record.info["BKPS"]), ",".join(origin_record.info["RNAMES"]), target_gt, target_dr, target_dv), file=output_vcf)
     else:
         #base_origin_gt_info = origin_record_str_split[-base_file_num:]
 

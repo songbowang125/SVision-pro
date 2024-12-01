@@ -439,6 +439,31 @@ def perform_coarse_partition_iter(hyper_cigars, options):
                         coarse_partition.bonus_supp_reads.extend(uncovered_hyper_cigar.supp_reads)
 
                         break
+    # #deal with bnd and insertion-like partitions
+    bnd_partitions = [partition for partition in coarse_partitions if partition.included_hyper_op == "B"]
+
+    will_removed_bnd_partitions = []
+    for bnd_partition in bnd_partitions:
+        bnd_cigar = bnd_partition.included_hyper_cigars[0]
+        for coarse_partition in coarse_partitions:
+
+            if "I" not in coarse_partition.included_hyper_op:
+                continue
+
+            if bnd_cigar.ref_chrom == coarse_partition.ref_chrom and abs(bnd_cigar.ref_start - coarse_partition.ref_start) < 50:
+                coarse_partition.supp_reads.extend(bnd_cigar.supp_reads)
+
+                will_removed_bnd_partitions.append(bnd_partition)
+                break
+
+            if bnd_cigar.bnd_ref_chrom == coarse_partition.ref_chrom and abs(bnd_cigar.bnd_ref_start - coarse_partition.ref_start) < 50:
+                coarse_partition.supp_reads.extend(bnd_cigar.supp_reads)
+
+                will_removed_bnd_partitions.append(bnd_partition)
+                break
+
+    for bnd_partition in will_removed_bnd_partitions:
+        coarse_partitions.remove(bnd_partition)
 
     return coarse_partitions
 
@@ -529,12 +554,13 @@ def generate_partitions_in_interval(target_hyper_cigars, ref_file, interval_chro
         else:
             if mode == "target" and options.min_sv_size <= partition.hybrid_length <= options.max_sv_size and options.min_supp <= len(partition.supp_reads):
                 partition.update_alt_bases(ref_file)
-                if "N" not in partition.included_hyper_cigars[0].alt_bases and "N" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
+
+                if "NNNNN" not in partition.included_hyper_cigars[0].alt_bases and "NNNNN" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
                     filtered_partitions.append(partition)
 
             if mode == "base" and options.min_sv_size - 20 <= partition.hybrid_length <= options.max_sv_size and 1 <= len(partition.supp_reads):
                 partition.update_alt_bases(ref_file)
-                if "N" not in partition.included_hyper_cigars[0].alt_bases and "N" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
+                if "NNNNN" not in partition.included_hyper_cigars[0].alt_bases and "NNNNN" not in ref_file.fetch(partition.ref_chrom, max(partition.ref_start - options.dist_diff_length, 0), partition.ref_start + options.dist_diff_length):
                     filtered_partitions.append(partition)
 
     # # STEP: mark imprecise partition

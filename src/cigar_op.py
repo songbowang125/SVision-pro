@@ -115,8 +115,30 @@ class HyperCigar:
         self.uncovered_flag = uncovered_flag
         self.shorter_flag = shorter_flag
 
+        if self.op == "B":
+            self.bnd_ref_chrom = self.detail_cigars[0].bnd_ref_chrom
+            self.bnd_ref_start = self.detail_cigars[0].bnd_ref_start
+            self.bnd_ref_end = self.detail_cigars[0].bnd_ref_end
+            self.bnd_ref_strand = self.detail_cigars[0].bnd_ref_strand
+        else:
+            self.bnd_ref_chrom = None
+            self.bnd_ref_start = None
+            self.bnd_ref_end = None
+            self.bnd_ref_strand = None
+
+    # def bnd_switch_bkp(self, interval_chrom, interval_start, interval_end):
+    #
+    #     bnd_cigar = self.detail_cigars[0]
+
+
     def get_cigar_identifier(self):
-        self.identifier = "{}-{}-{}-{}-{}-{}-{}-{}".format(self.ref_chrom, self.ref_start, self.ref_end, self.op, self.hybrid_length, self.ref_start_with_secondary, self.ref_end_with_secondary, self.uncovered_flag)
+        if self.op == "B":
+            if self.bnd_ref_chrom > self.ref_chrom:
+                self.identifier = "{}-{}-{}-{}-{}-{}-{}-{}".format(self.ref_chrom, self.ref_start, self.ref_end, self.op, self.bnd_ref_chrom, self.bnd_ref_start, self.bnd_ref_end, self.uncovered_flag)
+            else:
+                self.identifier = "{}-{}-{}-{}-{}-{}-{}-{}".format(self.bnd_ref_chrom, self.bnd_ref_start, self.bnd_ref_end, self.op, self.ref_chrom, self.ref_start, self.ref_end, self.uncovered_flag)
+        else:
+            self.identifier = "{}-{}-{}-{}-{}-{}-{}-{}".format(self.ref_chrom, self.ref_start, self.ref_end, self.op, self.hybrid_length, self.ref_start_with_secondary, self.ref_end_with_secondary, self.uncovered_flag)
 
         return self.identifier
 
@@ -446,6 +468,7 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
         coverage_list = []
 
     for align in partial_bam_file:
+
         hyper_cigars_single_read = []
 
         # # no cigar, then pass this align
@@ -505,7 +528,7 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
 
         # # STEP: add cur read's non match cigars to all reads
         for cigar in hyper_cigars_single_read:
-            if cigar.ref_chrom != interval_chrom:
+            if cigar.op != "B" and cigar.ref_chrom != interval_chrom:
                 continue
 
             if cigar.hybrid_length > options.max_sv_size:
@@ -519,7 +542,6 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
                 hyper_cigars_all_reads[cigar.get_cigar_identifier()].supp_reads.extend(cigar.supp_reads)
 
     # # STEP: filter cigar by min support and sort by ref cords
-
     if not options.skip_coverage_filter and mode == "target":
         mass_coverage_list = coverage_list.copy()
         mass_coverage_list[coverage_list <= options.max_coverage] = 0
@@ -700,6 +722,39 @@ def collect_from_intra_align(align, mode, options):
     return candidate_hyper_cigars, [align_obj]
 
 
+def generate_bnd_cigar(cur_align, next_align, options):
+
+    cur_align_strand = cur_align.strand if cur_align.secondary_strand is None else cur_align.secondary_strand
+    if cur_align_strand == "+":
+        if cur_align.secondary_ref_chrom is not None:
+            tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.secondary_ref_chrom, cur_align.secondary_ref_end, cur_align.secondary_ref_end, cur_align.secondary_strand)
+        else:
+            tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
+
+    else:
+        if cur_align.secondary_ref_chrom is not None:
+            tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.secondary_ref_chrom, cur_align.secondary_ref_start, cur_align.secondary_ref_start, cur_align.secondary_strand)
+        else:
+            tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_start, cur_align.ref_start, cur_align.strand)
+
+    next_align_strand = next_align.strand if next_align.secondary_strand is None else next_align.secondary_strand
+    if next_align_strand == "+":
+        if next_align.secondary_ref_chrom is not None:
+            tmp_detial_cigar.set_bnd_mapping(next_align.secondary_ref_chrom, next_align.secondary_ref_start, next_align.secondary_ref_start, next_align.secondary_strand)
+        else:
+            tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
+    else:
+        if next_align.secondary_ref_chrom is not None:
+            tmp_detial_cigar.set_bnd_mapping(next_align.secondary_ref_chrom, next_align.secondary_ref_end, next_align.secondary_ref_end, next_align.secondary_strand)
+        else:
+            tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_end, next_align.ref_end, next_align.strand)
+
+    if tmp_detial_cigar.ref_start == tmp_detial_cigar.bnd_ref_start or tmp_detial_cigar.ref_end == tmp_detial_cigar.bnd_ref_end:
+        return None
+    else:
+        return tmp_detial_cigar
+
+
 def collect_from_inter_align(primary, mode, options):
     """
     process inter aligns (between primary and supplementary aligns)
@@ -709,25 +764,24 @@ def collect_from_inter_align(primary, mode, options):
 
     # # STEP: first, for each primary align, we need collect its supp aligns
     read_aligns, read_align_chroms = collect_and_boost_supp_aligns(primary, mode, options)
-    
+
     # # STEP: filter abnormal aligns
-    pm_index = -1
-    abnormal_flag = False
-    for index in range(len(read_aligns)):
-        align = read_aligns[index]
-
-        # # too long ref span
-        align_ref_span = align.ref_end - align.ref_start
-        if align_ref_span > options.max_sv_size:
-            abnormal_flag = True
-
-        align_type = align.source
-
-        if align_type == "PM":
-            pm_index = index
-
-    if abnormal_flag is True:
-        return [], [read_aligns[pm_index]]
+    # pm_index = -1
+    # abnormal_flag = False
+    # for index in range(len(read_aligns)):
+    #     align = read_aligns[index]
+    #
+    #     # # too long ref span
+    #     align_ref_span = align.ref_end - align.ref_start
+    #     if align_ref_span > options.max_sv_size:
+    #         abnormal_flag = True
+    #
+    #     align_type = align.source
+    #
+    #     if align_type == "PM":
+    #         pm_index = index
+    # if abnormal_flag is True:
+    #     return [], [read_aligns[pm_index]]
 
     # # set seq
     read_seq = primary.query_sequence
@@ -743,29 +797,13 @@ def collect_from_inter_align(primary, mode, options):
     # # STEP: inter-chrom, BNDs
     if not options.skip_bnd:
         for align_index in range(len(read_aligns) - 1):
-            cur_align = read_aligns[align_index]
-            next_align = read_aligns[align_index + 1]
+            cur_align, next_align = read_aligns[align_index], read_aligns[align_index + 1]
 
             # # different chrom, then we create a BND cigar
             if cur_align.ref_chrom != next_align.ref_chrom:
-
-                # if cur_align.ref_chrom < next_align.ref_chrom:
-
-                if cur_align.strand == "+":
-                    tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
-                else:
-                    tmp_detial_cigar = DetailCigar("B", options.min_sv_size, cur_align.ref_chrom, cur_align.ref_start, cur_align.ref_start, cur_align.strand)
-
-                if next_align.strand == "+":
-                    tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
-                else:
-                    tmp_detial_cigar.set_bnd_mapping(next_align.ref_chrom, next_align.ref_end, next_align.ref_end, next_align.strand)
-
-                # else:
-                #     tmp_detial_cigar = DetailCigar("B", -1, next_align.ref_chrom, next_align.ref_start, next_align.ref_start, next_align.strand)
-                #     tmp_detial_cigar.set_bnd_mapping(cur_align.ref_chrom, cur_align.ref_end, cur_align.ref_end, cur_align.strand)
-
-                candidate_hyper_cigars.append(HyperCigar([tmp_detial_cigar], [read_name]))
+                bnd_cigar = generate_bnd_cigar(cur_align, next_align, options)
+                if bnd_cigar is not None:
+                    candidate_hyper_cigars.append(HyperCigar([bnd_cigar], [read_name]))
 
     # # STEP: intra-chrom, BND and non-BND events
     for spec_chrom in read_align_chroms:
@@ -773,6 +811,40 @@ def collect_from_inter_align(primary, mode, options):
 
         # # STEP: find match aligns, store their index
         match_aligns_index = [i for i in range(len(read_aligns_spec_chrom)) if "M" in read_aligns_spec_chrom[i].cigar]
+
+        if len(match_aligns_index) == 0:
+            all_remain_aligns = [tmp_align for tmp_align in read_aligns_spec_chrom if tmp_align.source != "Boost"]
+
+            for align_index in range(len(all_remain_aligns) - 1):
+                cur_align, next_align = all_remain_aligns[align_index], all_remain_aligns[align_index + 1]
+
+                bnd_cigar = generate_bnd_cigar(cur_align, next_align, options)
+                if bnd_cigar is not None:
+                    candidate_hyper_cigars.append(HyperCigar([bnd_cigar], [read_name]))
+        else:
+
+            # # there is still non-M aligns on the left side, then generate bnds
+            leftmost_match_align_index = min(match_aligns_index)
+            if leftmost_match_align_index != 0:
+                left_remain_aligns = [tmp_align for tmp_align in read_aligns_spec_chrom[: leftmost_match_align_index + 1] if tmp_align.source != "Boost"]
+
+                for align_index in range(len(left_remain_aligns) - 1):
+                    cur_align, next_align = left_remain_aligns[align_index], left_remain_aligns[align_index + 1]
+
+                    bnd_cigar = generate_bnd_cigar(cur_align, next_align, options)
+                    if bnd_cigar is not None:
+                        candidate_hyper_cigars.append(HyperCigar([bnd_cigar], [read_name]))
+
+            # # there is still non-M aligns on the right side, then generate bnds
+            rightmost_match_align_index = max(match_aligns_index)
+            if rightmost_match_align_index != len(read_aligns_spec_chrom) - 1:
+                right_remain_aligns = [tmp_align for tmp_align in read_aligns_spec_chrom[rightmost_match_align_index: ] if tmp_align.source != "Boost"]
+                for align_index in range(len(right_remain_aligns) - 1):
+                    cur_align, next_align = right_remain_aligns[align_index], right_remain_aligns[align_index + 1]
+
+                    bnd_cigar = generate_bnd_cigar(cur_align, next_align, options)
+                    if bnd_cigar is not None:
+                        candidate_hyper_cigars.append(HyperCigar([bnd_cigar], [read_name]))
 
         # # STEP: aligns between each two match aligns are non_match aligns
         for i in range(len(match_aligns_index) - 1):
@@ -788,7 +860,6 @@ def collect_from_inter_align(primary, mode, options):
                 continue
             if included_non_match_aligns_chroms[0] != spec_chrom:
                 continue
-
             # # STEP: generate hyper cigars.
             hyper_cigar_ops = []
             hyper_cigar_op_lens = []
@@ -896,6 +967,4 @@ def collect_from_inter_align(primary, mode, options):
     if len(hyper_cigar_details) != 0:
         candidate_hyper_cigars.append(HyperCigar(hyper_cigar_details, [read_name], uncovered_flag=True))
 
-    # for cigar in candidate_hyper_cigars:
-    #     print(1111, cigar.uncovered_flag, cigar.to_string())
     return candidate_hyper_cigars, read_aligns

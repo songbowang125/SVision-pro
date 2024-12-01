@@ -285,27 +285,30 @@ def collect_and_boost_supp_aligns(primary, mode, options):
     leftmost_align = read_aligns[0]
     insert_length = leftmost_align.read_start - 0
     if options.min_sv_size < insert_length:
-        read_aligns.insert(0, Align(primary.reference_name, leftmost_align.ref_start, leftmost_align.ref_start, 0,  leftmost_align.read_start - 1, "+", "{}I".format(insert_length), "Boost"))
+        read_aligns.insert(0, Align(leftmost_align.ref_chrom, leftmost_align.ref_start, leftmost_align.ref_start, 0,  leftmost_align.read_start - 1, "+", "{}I".format(insert_length), "Boost"))
 
     # # condition 2: unmapped at the right most
     rightmost_align = read_aligns[-1]
     insert_length = read_length - rightmost_align.read_end
     if options.min_sv_size < insert_length:
-        read_aligns.append(Align(primary.reference_name, rightmost_align.ref_end, rightmost_align.ref_end, rightmost_align.read_end + 1, read_length, "+", "{}I".format(insert_length), "Boost"))
+        read_aligns.append(Align(rightmost_align.ref_chrom, rightmost_align.ref_end, rightmost_align.ref_end, rightmost_align.read_end + 1, read_length, "+", "{}I".format(insert_length), "Boost"))
 
     # # condition 3: unmapped between aligns
     for i in range(len(read_aligns) - 1):
-        cur_align_read_end = read_aligns[i].read_end + 1
-        next_align_read_start = read_aligns[i + 1].read_start - 1
+        cur_align = read_aligns[i]
+        next_align = read_aligns[i + 1]
+
+        cur_align_read_end = cur_align.read_end + 1
+        next_align_read_start = next_align.read_start - 1
         insert_length = next_align_read_start - cur_align_read_end + 1
         if options.min_sv_size < insert_length:
-            read_aligns.append(Align(primary.reference_name, read_aligns[i].ref_end, read_aligns[i].ref_end, cur_align_read_end, next_align_read_start, "+", "{}I".format(insert_length), "Boost"))
+            read_aligns.append(Align(primary.reference_name, cur_align.ref_end, cur_align.ref_end, cur_align_read_end, next_align_read_start, "+", "{}I".format(insert_length), "Boost"))
 
     read_aligns = sorted(read_aligns, key=lambda x: (x.read_start + x.read_end) / 2)
 
     # STEP: find deleted sequence between same chrom aligns
     for chrom in read_align_chroms:
-        read_aligns_spec_chrom = [align for align in read_aligns if align.ref_chrom == chrom]
+        read_aligns_spec_chrom = [align for align in read_aligns if align.ref_chrom == chrom and align.source != "Boost"]
         for i in range(len(read_aligns_spec_chrom) - 1):
             cur_align_ref_end = read_aligns_spec_chrom[i].ref_end + 1
             next_align_ref_start = read_aligns_spec_chrom[i + 1].ref_start - 1
@@ -335,7 +338,6 @@ def get_supplementary_aligns(align, pm_strand, mode, options):
     supplementary_aligns = []
 
     for tag in sa_tags:
-
         tag_split = tag.split(",")
         align_chrom = tag_split[0]
 
@@ -380,7 +382,6 @@ def get_supplementary_aligns(align, pm_strand, mode, options):
         # # STEP: generate sa info
         align_length = align_ref_end - align_ref_start + 1
         align_simplified_cigar = "{}M".format(align_length) if align_strand == "+" else "{}V".format(align_length)
-
         supplementary_aligns.append(Align(align_chrom, align_ref_start, align_ref_end, align_read_start, align_read_end, align_strand, align_simplified_cigar, "SA"))
 
     return supplementary_aligns
@@ -522,14 +523,14 @@ def resolve_duplicated_aligns(read_aligns, read_align_chroms):
         read_aligns_spec_chrom = [align for align in read_aligns if align.ref_chrom == chrom]
 
         # # STEP: first, fix the cords of first and last align, make sure they extends to the leftmost and rightmost
-        left_most_cord = min([align.ref_start for align in read_aligns_spec_chrom])
-        right_most_cord = max([align.ref_end for align in read_aligns_spec_chrom])
-
-        first_align = read_aligns_spec_chrom[0]
-        last_align = read_aligns_spec_chrom[-1]
-
-        first_align.ref_start = left_most_cord
-        last_align.ref_end = right_most_cord
+        # left_most_cord = min([align.ref_start for align in read_aligns_spec_chrom])
+        # right_most_cord = max([align.ref_end for align in read_aligns_spec_chrom])
+        #
+        # first_align = read_aligns_spec_chrom[0]
+        # last_align = read_aligns_spec_chrom[-1]
+        #
+        # first_align.ref_start = left_most_cord
+        # last_align.ref_end = right_most_cord
 
         # # STEP: set major align as the first align
         major_align = read_aligns_spec_chrom[0]
@@ -546,6 +547,7 @@ def resolve_duplicated_aligns(read_aligns, read_align_chroms):
                 # # next_align is fully covered, and therefore there is an insertion
                 if overlap_type == "A_is_fully_overlapped_by_B":
                     # print("fully,", "major(A): ", target_align.to_string(), "next: ", next_align.to_string())
+                    overlap_length = min(overlap_length, next_align.ref_end - next_align.ref_start + 1)
 
                     minor_align_flag = 1
                     insert_pos = major_align.ref_end
@@ -569,13 +571,21 @@ def resolve_duplicated_aligns(read_aligns, read_align_chroms):
                     insert_pos = major_align.ref_end
 
                     # # generate new align and append it to the list
-                    new_align = Align(major_align.ref_chrom, insert_pos, insert_pos, next_align.read_start, next_align.read_start + overlap_length - 1, "+", "{}I".format(overlap_length), "DUP")
+                    if next_align.strand == "+":
+                        new_align = Align(major_align.ref_chrom, insert_pos, insert_pos, next_align.read_start, next_align.read_start + overlap_length - 1, "+", "{}I".format(overlap_length), "DUP")
+                    else:
+                        new_align = Align(major_align.ref_chrom, insert_pos, insert_pos, next_align.read_end - overlap_length + 1, next_align.read_end, "+", "{}I".format(overlap_length), "DUP")
+
                     new_align.set_secondary_mapping(next_align.ref_chrom, next_align.ref_start, next_align.ref_start + overlap_length - 1, next_align.strand)
                     resolved_read_aligns.append(new_align)
 
                     # # update next align's cords in major_align
-                    next_align.ref_start += overlap_length - 1
-                    next_align.read_start += overlap_length - 1
+                    if next_align.strand == "+":
+                        next_align.ref_start += overlap_length - 1
+                        next_align.read_start += overlap_length - 1
+                    else:
+                        next_align.ref_start += overlap_length - 1
+                        next_align.read_end -= overlap_length
 
                     # print("partially,", "major: ", major_align.to_string(), "next: ", next_align.to_string())
 

@@ -127,21 +127,21 @@ def detect_pseudo_vaf_for_detail_cigar_via_coverage_list(detail_cigar, supp_num,
     """
 
     if not coverage_list_ref_start < detail_cigar.ref_start < coverage_list_ref_end:
-        # detect_pseudo_vaf_for_detail_cigar_via_fetch_bam(detail_cigar, supp_num, options.target_path, options.min_mapq)
+        detect_pseudo_vaf_for_detail_cigar_via_fetch_bam(detail_cigar, supp_num, options.target_path, options.min_mapq)
 
-        unique_read_num = supp_num
-        # # STEP: calculate pseudo vaf
-        try:
-            pseudo_vaf = round(supp_num / unique_read_num, 2)
-        except ZeroDivisionError:
-            pseudo_vaf = 1.0
-
-        # print(supp_num, unique_read_num, pseudo_vaf)
-        # print("not covered", detail_cigar.ref_start, supp_num, unique_read_num, pseudo_vaf)
-
-        # # STEP: set
-        detail_cigar.set_coverage(unique_read_num)
-        detail_cigar.set_pseudo_vaf(min(1.0, pseudo_vaf))
+        # unique_read_num = supp_num
+        # # # STEP: calculate pseudo vaf
+        # try:
+        #     pseudo_vaf = round(supp_num / unique_read_num, 2)
+        # except ZeroDivisionError:
+        #     pseudo_vaf = 1.0
+        #
+        # # print(supp_num, unique_read_num, pseudo_vaf)
+        # # print("not covered", detail_cigar.ref_start, supp_num, unique_read_num, pseudo_vaf)
+        #
+        # # # STEP: set
+        # detail_cigar.set_coverage(unique_read_num)
+        # detail_cigar.set_pseudo_vaf(min(1.0, pseudo_vaf))
         
     else:
 
