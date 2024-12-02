@@ -251,7 +251,11 @@ def collect_and_boost_supp_aligns(primary, mode, options):
             read_align_chroms.append(read_aligns[i].ref_chrom)
 
     # # STEP: find duplicated aligns
-    read_aligns = resolve_duplicated_aligns(read_aligns, read_align_chroms)
+    duplicated_on_read = resolve_duplicated_aligns_on_read(read_aligns, options.min_sv_size)
+    if duplicated_on_read:
+        return [], []
+
+    read_aligns = resolve_duplicated_aligns_on_ref(read_aligns, read_align_chroms)
 
     # # STEP: determine BNDs, there are two kinds of BND, single-end BND or double-ends BND
     # # NOTICE: BND are defined as chr_small to chr_large when inter, chr_small_pos to chr_large_pos when intra
@@ -510,7 +514,69 @@ def resolve_linear_ins_del(read_aligns, options):
         read_aligns.pop(index)
 
 
-def resolve_duplicated_aligns(read_aligns, read_align_chroms):
+def resolve_duplicated_aligns_on_read(read_aligns, min_sv_size):
+    """
+    if the aligns are overlapped on read, then we return True
+    """
+
+    for align_index in range(len(read_aligns) - 1):
+
+        current_align = read_aligns[align_index]
+        next_align = read_aligns[align_index + 1]
+        if next_align.read_start < current_align.read_end:
+            overlap_length = current_align.read_end - next_align.read_start
+
+            if overlap_length > 500:
+                return True
+
+    return False
+
+    # # the next codes, not used for now, try to tackle the duplicated aligns,
+    # # find the index for primary align
+    # pm_align_index = None
+    # for align_index in range(len(read_aligns)):
+    #     if read_aligns[align_index].source == "PM":
+    #         pm_align_index = align_index
+    #         break
+    #
+    # if pm_align_index is None:
+    #     return read_aligns
+    #
+    # for align_index in range(len(read_aligns) - 1):
+    #
+    #     current_align = read_aligns[align_index]
+    #     next_align = read_aligns[align_index + 1]
+    #
+    #     # # both are not pm align or, the current align is the pm align
+    #     # # then we check if the next is overlapped with currant
+    #     if (current_align.source != "PM" and next_align.source != "PM") or (current_align.source == "PM" and next_align.source != "PM"):
+    #         if next_align.read_start < current_align.read_end:
+    #
+    #             overlap_length = current_align.read_end - next_align.read_start
+    #             if next_align.strand == "+":
+    #                 next_align.read_start += overlap_length
+    #                 next_align.ref_start += overlap_length
+    #             else:
+    #                 next_align.read_start += overlap_length
+    #                 next_align.ref_end -= overlap_length
+    #
+    #     # # the next align is the pm align
+    #     # # then we check if the current is overlapped with next
+    #     if current_align.source != "PM" and next_align.source == "PM":
+    #         if next_align.read_start < current_align.read_end:
+    #             overlap_length = current_align.read_end - next_align.read_start
+    #
+    #             if current_align.strand == "+":
+    #                 current_align.read_end -= overlap_length
+    #                 current_align.ref_end -= overlap_length
+    #             else:
+    #                 current_align.read_end -= overlap_length
+    #                 current_align.ref_start += overlap_length
+    #
+    # return read_aligns
+
+
+def resolve_duplicated_aligns_on_ref(read_aligns, read_align_chroms):
     """
     resolve overlapped aligns, cut them and generate I
     :param read_aligns:

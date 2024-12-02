@@ -765,6 +765,10 @@ def collect_from_inter_align(primary, mode, options):
     # # STEP: first, for each primary align, we need collect its supp aligns
     read_aligns, read_align_chroms = collect_and_boost_supp_aligns(primary, mode, options)
 
+    # print("Final")
+    # for align in read_aligns:
+    #     print(align.to_string())
+
     # # STEP: filter abnormal aligns
     # pm_index = -1
     # abnormal_flag = False
