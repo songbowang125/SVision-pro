@@ -42,6 +42,9 @@ def collect_and_detect_in_interval(interval_chrom, interval_start, interval_end,
         # # STEP: collect non match cigars from target file (tumor BAM)
         target_hyper_cigars, target_interval_coverage = collect_cigars_from_bam(options.target_path, interval_chrom, interval_start, interval_end, "target", options)
 
+        # for cigar in target_hyper_cigars:
+        #     print(cigar.to_string())
+
         # # STEP: run coarse grained segmentation
         partitions_list = generate_partitions_in_interval(target_hyper_cigars, ref_file, interval_chrom, interval_start, interval_end, "target", options)
 

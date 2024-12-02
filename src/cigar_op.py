@@ -469,6 +469,11 @@ def collect_cigars_from_bam(bam_path, interval_chrom, interval_start, interval_e
 
     for align in partial_bam_file:
 
+        # if align.query_name not in ['m84039_230312_025934_s1/188946216/ccs']:
+        #     continue
+
+        # print(align.query_name)
+
         hyper_cigars_single_read = []
 
         # # no cigar, then pass this align
@@ -764,10 +769,6 @@ def collect_from_inter_align(primary, mode, options):
 
     # # STEP: first, for each primary align, we need collect its supp aligns
     read_aligns, read_align_chroms = collect_and_boost_supp_aligns(primary, mode, options)
-
-    # print("Final")
-    # for align in read_aligns:
-    #     print(align.to_string())
 
     # # STEP: filter abnormal aligns
     # pm_index = -1
