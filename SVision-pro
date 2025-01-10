@@ -85,6 +85,7 @@ def check_arguments(options):
         options.mismatch_filter = False
         options.mismatch_ratio = 1
         options.size_sim_ratio = 0.6
+        options.min_supp = 1
     elif options.preset == "error-prone":
         options.mismatch_filter = False
         options.mismatch_ratio = 0.15

@@ -1,5 +1,9 @@
 ## SVision-pro
 SVision-pro detects germline, de novo and somatic structural variants (SV), including simple SV (SSV) and complex SV (CSV). 
+
+Both long reads from HiFi or other technologies, and genome assemblies are acceptable.
+
+
 SVision-pro implements genome-to-genome representation and comparative SV detection, genotyping and differentiating using a neural network based image instance segmentation framework. 
 
 SVision-pro comprises two modules: a genome-to-genome representation module encoding genomic features from two samples to an image, from which a neural-network recognition module comparatively recognizes SVs as well as their inter-genome differences. In particular, SVision-pro formulates SV detection, genotyping and differentiating as a neural-network-based image instance segmentation task, facilitating the discovery of both de novo and somatic SV and CSV.
