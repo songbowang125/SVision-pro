@@ -425,7 +425,7 @@ def perform_coarse_partition_iter(hyper_cigars, options):
 
                 break
 
-    if options.detect_mode == "germline" or options.detect_mode == 'genotype' or options.force_cluster:
+    if options.preset not in ['asm'] and (options.detect_mode == "germline" or options.detect_mode == 'genotype' or options.force_cluster):
         # # STEP: for each uncovered cigar, merge it directly into partition
 
         for uncovered_hyper_cigar in uncovered_hyper_cigars:
