@@ -10,8 +10,18 @@ SVision-pro comprises two modules: a genome-to-genome representation module enco
 
 <div align=left><img width=80% height=80% src="https://github.com/songbowang125/SVision-pro/blob/main/src/pre_process/workflow.png"/></div> 
 
-## Citation
-Please cite our paper ["Songbo Wang et al. De novo and somatic structural variant discovery with SVision-pro. Nature Biotechnology (2024)"](https://www.nature.com/articles/s41587-024-02190-7)
+## Papers
+You can cite both the 'pro' and 'orignial' versions:
+
+SVision-pro: ["Nature Biotechnology (2024)"](https://www.nature.com/articles/s41587-024-02190-7)
+
+SVision: ["Nature Methods (2022)"](https://www.nature.com/articles/s41592-022-01609-w)
+
+SVision-popolation on reads: coming soon
+
+SVision-popolation on assemblies: coming soon
+
+
 ## License
 
 SVision-pro is free for non-commercial use by academic, government, and non-profit/not-for-profit institutions. A commercial version of the software is available and licensed through Xi’an Jiaotong University.
