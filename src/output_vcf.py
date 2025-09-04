@@ -50,31 +50,55 @@ def classify_vaf_to_genotype(vaf):
     else:
         return '0/0'
 
+
+def parse_bnd_record(bnd_record, reverse_two_bkp=False):
+
+    reverse_orient = {"+": "-", "-": "+"}
+
+    first_chrom, first_pos, first_orient = bnd_record.contig, bnd_record.start + 1, "+"
+    second_info = list(bnd_record.alts)[0]
+
+    if "]" in second_info:
+        second_orient = "-"
+    else:
+        second_orient = "+"
+
+    second_info = second_info.replace("[N", "").replace("]N", "").replace("]", "").replace("[", "").split(":")
+    second_chrom, second_pos = second_info[0], int(second_info[1])
+
+    if reverse_two_bkp:
+        return second_chrom, second_pos, reverse_orient[second_orient], first_chrom, first_pos, reverse_orient[first_orient]
+    else:
+        return first_chrom, first_pos, first_orient, second_chrom, second_pos, second_orient
+
+
+def bnds_to_large_inv(bnd_records, options):
+
+    large_invs = []
+    large_inv_bnd_records = []
+
+    still_bnd_records = []
+    for bnd_record in bnd_records:
+        first_chrom, first_pos, first_orient, second_chrom, second_pos, second_orient = parse_bnd_record(bnd_record)
+
+        first_pos = int(first_pos)
+        second_pos = int(second_pos)
+
+        if first_chrom == second_chrom and options.min_sv_size <= abs(first_pos - second_pos) <= options.max_sv_size and second_orient == "-":
+
+            large_invs.append([first_chrom, min([first_pos, second_pos]), max([first_pos, second_pos])])
+            large_inv_bnd_records.append(bnd_record)
+        else:
+            still_bnd_records.append(bnd_record)
+
+    return large_invs, large_inv_bnd_records, still_bnd_records
+
+
 def re_merge_bnds(raw_bnd_records, options):
     """
     due the primary and supplementary, the bnd start could be either in the first chrom or the second chrom.
     In that case, we need merge the two condition together
     """
-
-    def parse_bnd_record(bnd_record, reverse_two_bkp=False):
-
-        reverse_orient = {"+": "-", "-": "+"}
-
-        first_chrom, first_pos, first_orient = bnd_record.contig, bnd_record.start + 1, "+"
-        second_info = list(bnd_record.alts)[0]
-
-        if "]" in second_info:
-            second_orient = "-"
-        else:
-            second_orient = "+"
-
-        second_info = second_info.replace("[N", "").replace("]N", "").replace("]", "").replace("[", "").split(":")
-        second_chrom, second_pos = second_info[0], int(second_info[1])
-
-        if reverse_two_bkp:
-            return second_chrom, second_pos, reverse_orient[second_orient], first_chrom, first_pos, reverse_orient[first_orient]
-        else:
-            return first_chrom, first_pos, first_orient, second_chrom, second_pos, second_orient
 
     # # traverse each
     merged_bnd_records = []
@@ -96,7 +120,6 @@ def re_merge_bnds(raw_bnd_records, options):
             merged_bnd_records.append(base_record)
 
     return merged_bnd_records
-
 
 
 def output_vcf_final(output_vcf_path, intervals_list, options):
@@ -147,13 +170,57 @@ def output_vcf_final(output_vcf_path, intervals_list, options):
                     fout.write("\t".join(record_split))
 
         if not options.skip_bnd:
-            merged_bnd_records = re_merge_bnds(raw_bnds_records, options)
 
-            for record in merged_bnd_records:
+            merged_bnd_records = re_merge_bnds(raw_bnds_records, options)
+            large_invs, large_inv_bnd_records, still_bnd_records = bnds_to_large_inv(merged_bnd_records, options)
+
+            for large_inv_index in range(len(large_invs)):
+                large_inv = large_invs[large_inv_index]
+                large_inv_record = large_inv_bnd_records[large_inv_index]
+
+                large_inv_record.start = large_inv[1]
+                large_inv_record.stop = large_inv[2]
+                large_inv_record.info["SVTYPE"] = "INV"
+                large_inv_record.info["SVLEN"] = large_inv[2] - large_inv[1]
+                large_inv_record.alts = ["SV"]
+                large_inv_record.info["BKPS"] = "INV_{}_{}_{}_{}_{}".format(large_inv_record.info["SVLEN"], large_inv[0], large_inv[1], large_inv[2], large_inv[2])
+
+                large_inv_record.id = str(output_cnt)
+                output_cnt += 1
+
+                fout.write(str(large_inv_record))
+
+            for record in still_bnd_records:
                 record.info.pop("SVLEN")
                 record.info.pop("BKPS")
 
+                record.id = str(output_cnt)
+                output_cnt += 1
+
                 fout.write(str(record))
+
+            # large_invs, large_inv_bnd_records, still_bnd_records = bnds_to_large_inv(raw_bnds_records, options)
+            #
+            # for large_inv_index in range(len(large_invs)):
+            #     large_inv = large_invs[large_inv_index]
+            #     print(large_inv)
+            #     large_inv_record = large_inv_bnd_records[large_inv_index]
+            #
+            #     large_inv_record.start = large_inv[1]
+            #     large_inv_record.stop = large_inv[2]
+            #     large_inv_record.info["SVTYPE"] = "INV"
+            #     large_inv_record.info["SVLEN"] = large_inv[2] - large_inv[1]
+            #
+            #     fout.write(str(large_inv_record))
+            #
+            #
+            # merged_bnd_records = re_merge_bnds(still_bnd_records, options)
+            #
+            # for record in merged_bnd_records:
+            #     record.info.pop("SVLEN")
+            #     record.info.pop("BKPS")
+            #
+            #     fout.write(str(record))
 
     end_time = datetime.datetime.now()
     logging.info("Outputting {} to {}. Time cost: {}s".format(options.sample_name, output_vcf_path, (end_time - start_time).seconds))
